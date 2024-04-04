@@ -17,11 +17,17 @@ class TransactionCreateView(APIView):
             t_date= serializer.validated_data.get('transaction_date')
             if(t_date== None ):
                 t_date=date.today()
+            credit_user=User.objects.filter(phone=serializer.validated_data.get('credit_user'))[0]
+            debit_user=User.objects.filter(phone=serializer.validated_data.get('debit_user'))[0]
             transaction = Transactions.objects.create(
                 transaction_date=t_date, 
                 transaction_amount=serializer.validated_data.get( 'transaction_amount'), 
-                credit_user=User.objects.filter(phone=serializer.validated_data.get('credit_user'))[0], 
-                debit_user=User.objects.filter(phone=serializer.validated_data.get('debit_user'))[0])
+                credit_user=credit_user, 
+                debit_user=debit_user)
+            credit_user.balance += transaction.transaction_amount
+            debit_user.balance -= transaction.transaction_amount
+            credit_user.save()
+            debit_user.save()
             transaction.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
@@ -49,6 +55,6 @@ class TransactionsDetailView(APIView):
             }
             cr_list[i] = tran
         transactions = cr_list + dr_list
-        sorted_transactions = sorted(transactions, key=lambda transaction: transaction['transaction_date']) 
+        sorted_transactions = sorted(transactions, key=lambda transaction: transaction['transaction_date'], reverse=True) 
         return Response(sorted_transactions, status=200)
     

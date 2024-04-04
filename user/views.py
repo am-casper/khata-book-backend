@@ -10,7 +10,6 @@ class UserCreateView(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             print(serializer.validated_data.get('phone'))
-            # serializer.name=serializer.validated_data.get('name')
             user = User.objects.create(**serializer.validated_data)
             user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -20,4 +19,9 @@ class UserDetailView(APIView):
     def get(self, request):
         users = User.objects.filter(phone=request.query_params.get('phone'))
         serializer = UserSerializer(users[0])
-        return Response(serializer.data)
+        response = {
+            'name': serializer.data.get('name'),
+            'phone': serializer.data.get('phone'),
+            'balance': users[0].balance
+        }
+        return Response(response, status=status.HTTP_200_OK)
